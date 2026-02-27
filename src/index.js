@@ -8,8 +8,6 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-import Anthropic from '@anthropic-ai/sdk'
-
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -18,25 +16,33 @@ const corsHeaders = {
 
 export default {
 	async fetch(request, env, ctx) {
-        const anthropic = new Anthropic({
-            apiKey: env.ANTHROPIC_API_KEY,
-        })
-
         if (request.method === 'OPTIONS') {
             return new Response(null, { headers: corsHeaders })
         }
 
-        try {
-            const messages = await request.json()
-            const response = await anthropic.messages.create({
-                model: 'claude-3-5-sonnet-20240620',
-                max_tokens: 300,
-                system: 'You are a text summarizer. When asked to summarize a text, send back the summary of it. Please only send back the summary without prefixing it with things like "Summary" or telling where the text is from. Also give me the summary as if the original author wrote it and without using a third person voice.',
-                messages: messages
-            })
-            return new Response(JSON.stringify(response.content[0].text), { headers: corsHeaders })
-        } catch (error) {
-            return new Response(JSON.stringify({ error: error }), { status: 500, headers: corsHeaders })
+        // Only handle POST to /summarize, let everything else go to static assets
+        if (request.method === 'POST' && new URL(request.url).pathname === '/summarize') {
+            try {
+                const messages = await request.json()
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': env.ANTHROPIC_API_KEY,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-opus-4-6',
+                        max_tokens: 300,
+                        system: 'You are a text summarizer. When asked to summarize a text, send back the summary of it. Please only send back the summary without prefixing it with things like "Summary" or telling where the text is from. Also give me the summary as if the original author wrote it and without using a third person voice.',
+                        messages: messages
+                    })
+                })
+                const data = await response.json()
+                return new Response(JSON.stringify({ summary: data.content[0].text }), { headers: corsHeaders })
+            } catch (error) {
+                 return new Response(JSON.stringify({ error: error}), { status: 500, headers: corsHeaders })
+            }
         }
 	},
 };

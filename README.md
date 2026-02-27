@@ -8,7 +8,7 @@ Corgi allows you to:
 # Where's Corgi?
 https://worker.textsummarizer.workers.dev 
 
-(it will not work since I removed the Anthropic API key from the worker to save $$$ lol)
+(summarize functionality will not work since I removed the Anthropic API key from the worker to save $$$ lol)
 
 # Implementation
 - Finalize features supported (copy, clear, option to change summary length etc.)

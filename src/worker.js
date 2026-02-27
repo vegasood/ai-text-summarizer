@@ -39,10 +39,15 @@ export default {
                     })
                 })
                 const data = await response.json()
+                if (!response.ok) {
+                    return new Response(JSON.stringify({ error: data.error?.message || 'Anthropic API error' }), { status: 500, headers: corsHeaders })
+                }
                 return new Response(JSON.stringify({ summary: data.content[0].text }), { headers: corsHeaders })
             } catch (error) {
-                 return new Response(JSON.stringify({ error: error}), { status: 500, headers: corsHeaders })
+                const message = error instanceof Error ? error.message : JSON.stringify(error)
+                return new Response(JSON.stringify({ error: message}), { status: 500, headers: corsHeaders })
             }
         }
+        return env.ASSETS.fetch(request)
 	},
 };
